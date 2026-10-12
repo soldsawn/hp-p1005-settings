@@ -168,33 +168,37 @@
                            Text="Değişiklikler anında uygulanır."/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-            <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="1"
+                <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="1"
                     CornerRadius="8" Width="84" Margin="0,0,8,0">
-                <UniformGrid Rows="1">
-                    <RadioButton x:Name="rdoTR" Style="{StaticResource Segment}" GroupName="dil" Content="TR" Click="Dil_Click"/>
-                    <RadioButton x:Name="rdoEN" Style="{StaticResource Segment}" GroupName="dil" Content="EN" Click="Dil_Click"/>
-                </UniformGrid>
-            </Border>
-            <Button Style="{StaticResource IkonDugme}"
+                    <UniformGrid Rows="1">
+                        <RadioButton x:Name="rdoTR" Style="{StaticResource Segment}" GroupName="dil" Content="TR" Click="Dil_Click"/>
+                        <RadioButton x:Name="rdoEN" Style="{StaticResource Segment}" GroupName="dil" Content="EN" Click="Dil_Click"/>
+                    </UniformGrid>
+                </Border>
+                <Button Style="{StaticResource IkonDugme}"
                     ToolTip="Açık / koyu mod" Click="Tema_Click">
-                <Grid Width="22" Height="22">
-                    <!-- Ay: açık moddayken gösterilir (koyuya geç) -->
-                    <Path x:Name="simgeAy" Fill="{DynamicResource Muted}">
-                        <Path.Data>
-                            <CombinedGeometry GeometryCombineMode="Exclude">
-                                <CombinedGeometry.Geometry1><EllipseGeometry Center="11,11" RadiusX="8" RadiusY="8"/></CombinedGeometry.Geometry1>
-                                <CombinedGeometry.Geometry2><EllipseGeometry Center="16,7" RadiusX="7" RadiusY="7"/></CombinedGeometry.Geometry2>
-                            </CombinedGeometry>
-                        </Path.Data>
-                    </Path>
-                    <!-- Güneş: koyu moddayken gösterilir (açığa geç) -->
-                    <Grid x:Name="simgeGunes" Visibility="Collapsed">
-                        <Ellipse Width="9" Height="9" Stroke="{DynamicResource Muted}" StrokeThickness="1.8"/>
-                        <Path Stroke="{DynamicResource Muted}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                    <Grid Width="22" Height="22">
+                        <!-- Ay: açık moddayken gösterilir (koyuya geç) -->
+                        <Path x:Name="simgeAy" Fill="{DynamicResource Muted}">
+                            <Path.Data>
+                                <CombinedGeometry GeometryCombineMode="Exclude">
+                                    <CombinedGeometry.Geometry1>
+                                        <EllipseGeometry Center="11,11" RadiusX="8" RadiusY="8"/>
+                                    </CombinedGeometry.Geometry1>
+                                    <CombinedGeometry.Geometry2>
+                                        <EllipseGeometry Center="16,7" RadiusX="7" RadiusY="7"/>
+                                    </CombinedGeometry.Geometry2>
+                                </CombinedGeometry>
+                            </Path.Data>
+                        </Path>
+                        <!-- Güneş: koyu moddayken gösterilir (açığa geç) -->
+                        <Grid x:Name="simgeGunes" Visibility="Collapsed">
+                            <Ellipse Width="9" Height="9" Stroke="{DynamicResource Muted}" StrokeThickness="1.8"/>
+                            <Path Stroke="{DynamicResource Muted}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Data="M11,1 V4 M11,18 V21 M1,11 H4 M18,11 H21 M4,4 L6,6 M16,16 L18,18 M4,18 L6,16 M16,6 L18,4"/>
+                        </Grid>
                     </Grid>
-                </Grid>
-            </Button>
+                </Button>
             </StackPanel>
         </Grid>
 
@@ -364,6 +368,7 @@
                         </Border>
                         <TextBlock Style="{StaticResource Aciklama}" Margin="0,8,0,0"
                                    Text="1 daha açık, 5 daha koyu baskı verir (toner yoğunluğu)."/>
+                        <Button Grid.Column="1" Content="Özellik ayar penceresini aç" Margin="0,6,0,0" Click="Ozellik_Click"/>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -377,7 +382,7 @@
             </Grid.ColumnDefinitions>
             <TextBlock Style="{StaticResource Aciklama}" VerticalAlignment="Center" Margin="0,0,16,0"
                        Text="Kağıt kaynağı, çift taraflı baskı, filigran ve ölçekleme gibi diğer ayarlar için HP'nin eski penceresini açabilirsin."/>
-            <Button Grid.Column="1" Content="Eski ayar penceresini aç" Click="Eski_Click"/>
+            <Button Grid.Column="1" Content="Yazdırma ayar penceresini aç." Click="Eski_Click"/>
         </Grid>
     </Grid>
 </Window>

@@ -338,7 +338,8 @@ namespace YaziciKesif
             ["Sayfayı yatay olarak ters çevirir"] = "Flips the page horizontally",
             ["Düz kağıda döndür"] = "Reset to plain paper",
             ["Kağıt kaynağı, çift taraflı baskı, filigran ve ölçekleme gibi diğer ayarlar için HP'nin eski penceresini açabilirsin."] = "For other settings such as paper source, duplex, watermark and scaling, open HP's original window.",
-            ["Eski ayar penceresini aç"] = "Open original settings window",
+            ["Yazdırma ayar penceresini aç"] = "Open print settings window",
+            ["Özellik ayar penceresini aç"] = "Open properties window",
             ["Yönetici olarak yeniden başlat"] = "Restart as administrator",
             ["Uyarılar ve hata kurtarma"] = "Alerts and error recovery",
             ["Durum iletileri"] = "Status messages",
@@ -446,7 +447,15 @@ namespace YaziciKesif
         void Eski_Click(object s, RoutedEventArgs e)
         {
             Process.Start(new ProcessStartInfo("rundll32.exe",
-                "printui.dll,PrintUIEntry /e /n \"" + Yazici + "\"") { UseShellExecute = true });
+                "printui.dll,PrintUIEntry /e /n \"" + Yazici + "\"")
+            { UseShellExecute = true });
         }
+        void Ozellik_Click(object s, RoutedEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo("rundll32.exe",
+                "printui.dll,PrintUIEntry /p /n \"" + Yazici + "\"")
+            { UseShellExecute = true });
+        }
+
     }
 }
