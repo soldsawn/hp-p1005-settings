@@ -1,0 +1,383 @@
+<Window x:Class="YaziciKesif.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="HP LaserJet P1005 Ayarları" Width="760" SizeToContent="Height"
+        ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="14"
+        Icon="Resources/logo.png">
+    <Window.Resources>
+        <!-- Açık tema varsayılanları; tema kodda değiştirilir -->
+        <SolidColorBrush x:Key="Bg" Color="#F3F5F7"/>
+        <SolidColorBrush x:Key="Card" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="Text" Color="#1B2430"/>
+        <SolidColorBrush x:Key="Muted" Color="#5F6B7A"/>
+        <SolidColorBrush x:Key="Line" Color="#DDE3EA"/>
+        <SolidColorBrush x:Key="Accent" Color="#0A7CC2"/>
+        <SolidColorBrush x:Key="Track" Color="#C3CCD6"/>
+
+        <Style x:Key="Kart" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Card}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20"/>
+        </Style>
+        <Style x:Key="Baslik" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+        <Style x:Key="Etiket" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+        <Style x:Key="Aciklama" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+
+        <!-- Açma/kapama anahtarı -->
+        <Style x:Key="Anahtar" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent" Margin="0,0,0,16" Cursor="Hand">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter Margin="0,0,16,0"/>
+                            <Border x:Name="Track" Grid.Column="1" Width="40" Height="22" CornerRadius="11"
+                                    VerticalAlignment="Top" Background="{DynamicResource Track}">
+                                <Ellipse x:Name="Knob" Width="16" Height="16" Fill="White"
+                                         HorizontalAlignment="Left" Margin="3,0,0,0"/>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="{DynamicResource Accent}"/>
+                                <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Knob" Property="Margin" Value="0,0,3,0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Segmentli seçici -->
+        <Style x:Key="Segment" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="B" CornerRadius="6" Margin="2" Padding="6,7" Background="Transparent" Cursor="Hand">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource Accent}"/>
+                                <Setter TargetName="B" Property="TextElement.Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="B" CornerRadius="8" Padding="14,7" BorderThickness="1" Cursor="Hand"
+                                Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="B" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Köşedeki simge düğmesi -->
+        <Style x:Key="IkonDugme" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="B" Width="38" Height="38" CornerRadius="19" Background="Transparent" Cursor="Hand">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource Line}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Üst sekmeler -->
+        <Style x:Key="Sekme" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="B" Padding="2,8,2,10" Margin="0,0,26,-1" BorderThickness="0,0,0,2"
+                                BorderBrush="Transparent" Background="Transparent" Cursor="Hand">
+                            <ContentPresenter TextElement.FontWeight="SemiBold"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                <Setter TargetName="B" Property="TextElement.Foreground" Value="{DynamicResource Text}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="24,20,24,22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Üst şerit -->
+        <Grid Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Text="HP LaserJet P1005" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock x:Name="txtDurum" Style="{StaticResource Etiket}" Margin="0,4,0,0"
+                           Text="Değişiklikler anında uygulanır."/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+            <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="1"
+                    CornerRadius="8" Width="84" Margin="0,0,8,0">
+                <UniformGrid Rows="1">
+                    <RadioButton x:Name="rdoTR" Style="{StaticResource Segment}" GroupName="dil" Content="TR" Click="Dil_Click"/>
+                    <RadioButton x:Name="rdoEN" Style="{StaticResource Segment}" GroupName="dil" Content="EN" Click="Dil_Click"/>
+                </UniformGrid>
+            </Border>
+            <Button Style="{StaticResource IkonDugme}"
+                    ToolTip="Açık / koyu mod" Click="Tema_Click">
+                <Grid Width="22" Height="22">
+                    <!-- Ay: açık moddayken gösterilir (koyuya geç) -->
+                    <Path x:Name="simgeAy" Fill="{DynamicResource Muted}">
+                        <Path.Data>
+                            <CombinedGeometry GeometryCombineMode="Exclude">
+                                <CombinedGeometry.Geometry1><EllipseGeometry Center="11,11" RadiusX="8" RadiusY="8"/></CombinedGeometry.Geometry1>
+                                <CombinedGeometry.Geometry2><EllipseGeometry Center="16,7" RadiusX="7" RadiusY="7"/></CombinedGeometry.Geometry2>
+                            </CombinedGeometry>
+                        </Path.Data>
+                    </Path>
+                    <!-- Güneş: koyu moddayken gösterilir (açığa geç) -->
+                    <Grid x:Name="simgeGunes" Visibility="Collapsed">
+                        <Ellipse Width="9" Height="9" Stroke="{DynamicResource Muted}" StrokeThickness="1.8"/>
+                        <Path Stroke="{DynamicResource Muted}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Data="M11,1 V4 M11,18 V21 M1,11 H4 M18,11 H21 M4,4 L6,6 M16,16 L18,18 M4,18 L6,16 M16,6 L18,4"/>
+                    </Grid>
+                </Grid>
+            </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Sekmeler -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Margin="0,0,0,18">
+            <StackPanel Orientation="Horizontal">
+                <RadioButton x:Name="sekmeYazdir" Style="{StaticResource Sekme}" GroupName="sekme" Content="Yazdırma" IsChecked="True" Click="Sekme_Click"/>
+                <RadioButton x:Name="sekmeAygit" Style="{StaticResource Sekme}" GroupName="sekme" Content="Aygıt" Click="Sekme_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Yazdırma sayfası: iki kart yan yana -->
+        <Grid x:Name="sayfaYazdir" Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource Kart}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Baslik}" Text="Baskı kalitesi"/>
+
+                    <TextBlock Style="{StaticResource Etiket}" Text="Çözünürlük"/>
+                    <Border Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8">
+                        <UniformGrid Rows="1">
+                            <RadioButton x:Name="rdoK0" Style="{StaticResource Segment}" GroupName="kalite" Content="FastRes 1200" Click="Kalite_Click"/>
+                            <RadioButton x:Name="rdoK1" Style="{StaticResource Segment}" GroupName="kalite" Content="600 dpi" Click="Kalite_Click"/>
+                        </UniformGrid>
+                    </Border>
+                    <TextBlock Style="{StaticResource Aciklama}" Margin="0,8,0,22"
+                               Text="FastRes 1200, 600 dpi donanımla 1200 dpi'a yakın kalite verir. 600 dpi daha basit ve biraz daha hızlıdır."/>
+
+                    <CheckBox x:Name="chkEcono" Style="{StaticResource Anahtar}" Click="Econo_Click">
+                        <StackPanel>
+                            <TextBlock Text="EconoMode" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Aciklama}" Text="Daha az toner, daha soluk baskı"/>
+                        </StackPanel>
+                    </CheckBox>
+                    <CheckBox x:Name="chkRet" Style="{StaticResource Anahtar}" Click="Ret_Click">
+                        <StackPanel>
+                            <TextBlock Text="REt (kenar netleştirme)" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Aciklama}" Text="Kenarları yumuşatır, genelde açık kalmalı"/>
+                        </StackPanel>
+                    </CheckBox>
+                    <CheckBox x:Name="chkSiyah" Style="{StaticResource Anahtar}" Margin="0,0,0,-16" Click="Siyah_Click">
+                        <StackPanel>
+                            <TextBlock Text="Tüm yazıları siyah yazdır" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Aciklama}" Text="Gri ve renkli yazıları siyaha çevirir"/>
+                        </StackPanel>
+                    </CheckBox>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Kart}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Baslik}" Text="Kağıt ve yön"/>
+
+                    <TextBlock Style="{StaticResource Etiket}" Text="Kağıt boyutu"/>
+                    <Border Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8">
+                        <UniformGrid Rows="1">
+                            <RadioButton x:Name="rdoA4" Style="{StaticResource Segment}" GroupName="boyut" Tag="0" Content="A4" Click="Boyut_Click"/>
+                            <RadioButton x:Name="rdoLetter" Style="{StaticResource Segment}" GroupName="boyut" Tag="1" Content="Letter" Click="Boyut_Click"/>
+                            <RadioButton x:Name="rdoLegal" Style="{StaticResource Segment}" GroupName="boyut" Tag="2" Content="Legal" Click="Boyut_Click"/>
+                            <RadioButton x:Name="rdoA5" Style="{StaticResource Segment}" GroupName="boyut" Tag="3" Content="A5" Click="Boyut_Click"/>
+                        </UniformGrid>
+                    </Border>
+
+                    <TextBlock Style="{StaticResource Etiket}" Margin="0,16,0,6" Text="Yön"/>
+                    <Border Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8">
+                        <UniformGrid Rows="1">
+                            <RadioButton x:Name="rdoDikey" Style="{StaticResource Segment}" GroupName="yon" Content="Dikey" Click="Yon_Click"/>
+                            <RadioButton x:Name="rdoYatay" Style="{StaticResource Segment}" GroupName="yon" Content="Yatay" Click="Yon_Click"/>
+                        </UniformGrid>
+                    </Border>
+
+                    <CheckBox x:Name="chkDondur" Style="{StaticResource Anahtar}" Margin="0,22,0,0" Click="Dondur_Click">
+                        <StackPanel>
+                            <TextBlock Text="180° döndür" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Aciklama}" Text="Sayfayı baş aşağı çevirir"/>
+                        </StackPanel>
+                    </CheckBox>
+                    <CheckBox x:Name="chkAyna" Style="{StaticResource Anahtar}" Click="Ayna_Click">
+                        <StackPanel>
+                            <TextBlock Text="Ayna yazdırma" FontWeight="SemiBold"/>
+                            <TextBlock Style="{StaticResource Aciklama}" Text="Sayfayı yatay olarak ters çevirir"/>
+                        </StackPanel>
+                    </CheckBox>
+
+                    <TextBlock x:Name="txtTur" Style="{StaticResource Etiket}" Margin="0,0,0,0"/>
+                    <Button x:Name="btnDuz" Content="Düz kağıda döndür" HorizontalAlignment="Left" Margin="0,6,0,0" Click="Duz_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Aygıt sayfası -->
+        <Grid x:Name="sayfaAygit" Grid.Row="2" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border x:Name="bannerYonetici" Style="{StaticResource Kart}" Padding="16,12" Margin="0,0,0,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="txtYonetici" Style="{StaticResource Aciklama}" VerticalAlignment="Center" Margin="0,0,16,0"
+                               Text="Bu ayarları değiştirmek için yönetici yetkisi gerekir. Şimdilik yalnızca görüntüleyebilirsin."/>
+                    <Button x:Name="btnYonetici" Grid.Column="1" Content="Yönetici olarak yeniden başlat" Click="Yonetici_Click"/>
+                </Grid>
+            </Border>
+
+            <Grid x:Name="kartlarAygit" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource Kart}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Baslik}" Text="Uyarılar ve hata kurtarma"/>
+                        <CheckBox x:Name="chkDurum" Style="{StaticResource Anahtar}" Click="Durum_Click">
+                            <StackPanel>
+                                <TextBlock Text="Durum iletileri" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Aciklama}" Text="Kağıt sıkışması, kartuş uyarısı gibi yazıcı mesajlarını ekranda gösterir. Kapalıyken hiçbiri çıkmaz, gerçek bir sıkışmayı da görmezsin."/>
+                            </StackPanel>
+                        </CheckBox>
+                        <CheckBox x:Name="chkSikisma" Style="{StaticResource Anahtar}" Click="Sikisma_Click">
+                            <StackPanel>
+                                <TextBlock Text="Sıkışma düzeltme" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Aciklama}" Text="Sıkışmadan sonra kaybolan sayfaları yazıcı yeniden basar"/>
+                            </StackPanel>
+                        </CheckBox>
+                        <CheckBox x:Name="chkManuel" Style="{StaticResource Anahtar}" Margin="0,0,0,-16" Click="Manuel_Click">
+                            <StackPanel>
+                                <TextBlock Text="Elle iki taraflı baskıya izin ver" FontWeight="SemiBold"/>
+                                <TextBlock Style="{StaticResource Aciklama}" Text="Yazdırma pencerelerinde elle çift taraflı seçeneğini gösterir"/>
+                            </StackPanel>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource Kart}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Baslik}" Text="Baskı görünümü"/>
+
+                        <TextBlock Style="{StaticResource Etiket}" Text="Courier yazı tipi"/>
+                        <Border Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8">
+                            <UniformGrid Rows="1">
+                                <RadioButton x:Name="rdoC0" Style="{StaticResource Segment}" GroupName="courier" Content="Normal" Click="Courier_Click"/>
+                                <RadioButton x:Name="rdoC1" Style="{StaticResource Segment}" GroupName="courier" Content="Koyu" Click="Courier_Click"/>
+                            </UniformGrid>
+                        </Border>
+
+                        <TextBlock Style="{StaticResource Etiket}" Margin="0,18,0,6" Text="Baskı yoğunluğu"/>
+                        <Border Background="{DynamicResource Bg}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="8">
+                            <UniformGrid Rows="1">
+                                <RadioButton x:Name="rdoY1" Style="{StaticResource Segment}" GroupName="yogunluk" Tag="1" Content="1" Click="Yogunluk_Click"/>
+                                <RadioButton x:Name="rdoY2" Style="{StaticResource Segment}" GroupName="yogunluk" Tag="2" Content="2" Click="Yogunluk_Click"/>
+                                <RadioButton x:Name="rdoY3" Style="{StaticResource Segment}" GroupName="yogunluk" Tag="3" Content="3" Click="Yogunluk_Click"/>
+                                <RadioButton x:Name="rdoY4" Style="{StaticResource Segment}" GroupName="yogunluk" Tag="4" Content="4" Click="Yogunluk_Click"/>
+                                <RadioButton x:Name="rdoY5" Style="{StaticResource Segment}" GroupName="yogunluk" Tag="5" Content="5" Click="Yogunluk_Click"/>
+                            </UniformGrid>
+                        </Border>
+                        <TextBlock Style="{StaticResource Aciklama}" Margin="0,8,0,0"
+                                   Text="1 daha açık, 5 daha koyu baskı verir (toner yoğunluğu)."/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- Alt şerit -->
+        <Grid Grid.Row="3" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Style="{StaticResource Aciklama}" VerticalAlignment="Center" Margin="0,0,16,0"
+                       Text="Kağıt kaynağı, çift taraflı baskı, filigran ve ölçekleme gibi diğer ayarlar için HP'nin eski penceresini açabilirsin."/>
+            <Button Grid.Column="1" Content="Eski ayar penceresini aç" Click="Eski_Click"/>
+        </Grid>
+    </Grid>
+</Window>

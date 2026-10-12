@@ -1,0 +1,15 @@
+# Visual Studio
+.vs/
+bin/
+obj/
+publish/
+*.user
+*.suo
+*.rsuser
+*.userprefs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.log
+*.nupkg
