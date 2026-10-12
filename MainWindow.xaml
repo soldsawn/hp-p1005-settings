@@ -382,7 +382,7 @@
             </Grid.ColumnDefinitions>
             <TextBlock Style="{StaticResource Aciklama}" VerticalAlignment="Center" Margin="0,0,16,0"
                        Text="Kağıt kaynağı, çift taraflı baskı, filigran ve ölçekleme gibi diğer ayarlar için HP'nin eski penceresini açabilirsin."/>
-            <Button Grid.Column="1" Content="Yazdırma ayar penceresini aç" Click="Eski_Click"/>
+            <Button Grid.Column="1" Content="Yazdırma ayar penceresini aç." Click="Eski_Click"/>
         </Grid>
     </Grid>
 </Window>
