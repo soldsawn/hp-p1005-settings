@@ -7,7 +7,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Resources\app_icon.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <Product>HP LaserJet P1005 Settings</Product>
   </PropertyGroup>
+
+  <!-- The test project lives in a subfolder; keep its sources out of the app's build. -->
+  <ItemGroup>
+    <Compile Remove="YaziciKesif.Tests\**" />
+    <None Remove="YaziciKesif.Tests\**" />
+    <Page Remove="YaziciKesif.Tests\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Remove="Resources\app_icon.ico" />

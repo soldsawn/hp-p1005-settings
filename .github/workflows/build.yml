@@ -1,0 +1,51 @@
+# Builds and tests every push and pull request. A tag such as v0.1.0 also publishes the two
+# single-file builds and attaches them to a GitHub Release:
+#   HP-P1005-Settings.exe             needs the .NET 8 Desktop Runtime (small)
+#   HP-P1005-Settings-standalone.exe  runs on any Windows 10/11 as it is (large)
+name: build
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: write   # the release step attaches files to the tag's release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test YaziciKesif.Tests -c Release
+
+      - name: Publish
+        shell: pwsh
+        run: |
+          dotnet publish YaziciKesif.csproj -c Release -r win-x64 --self-contained false `
+            -p:PublishSingleFile=true -o out/small
+          dotnet publish YaziciKesif.csproj -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true -o out/standalone
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item out/small/YaziciKesif.exe dist/HP-P1005-Settings.exe
+          Copy-Item out/standalone/YaziciKesif.exe dist/HP-P1005-Settings-standalone.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HP-P1005-Settings
+          path: dist/*.exe
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          generate_release_notes: true

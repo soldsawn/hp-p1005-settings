@@ -15,6 +15,7 @@
         <SolidColorBrush x:Key="Line" Color="#DDE3EA"/>
         <SolidColorBrush x:Key="Accent" Color="#0A7CC2"/>
         <SolidColorBrush x:Key="Track" Color="#C3CCD6"/>
+        <SolidColorBrush x:Key="Warn" Color="#B4690E"/>
 
         <Style x:Key="Kart" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource Card}"/>
@@ -112,6 +113,28 @@
             </Setter>
         </Style>
 
+        <!-- Vurgu renginde ana eylem düğmesi (onay kutusundaki "Geri dön") -->
+        <Style x:Key="BirincilDugme" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="B" CornerRadius="8" Padding="16,7" Cursor="Hand" Background="{DynamicResource Accent}">
+                            <ContentPresenter HorizontalAlignment="Center" TextElement.FontWeight="SemiBold"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="B" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Köşedeki simge düğmesi -->
         <Style x:Key="IkonDugme" TargetType="Button">
             <Setter Property="Template">
@@ -152,6 +175,8 @@
         </Style>
     </Window.Resources>
 
+    <!-- Dış ızgara: sayfa ve üstünde açılan onay katmanı aynı hücrede -->
+    <Grid>
     <Grid Margin="24,20,24,22">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -166,6 +191,12 @@
                 <TextBlock Text="HP LaserJet P1005" FontSize="22" FontWeight="SemiBold"/>
                 <TextBlock x:Name="txtDurum" Style="{StaticResource Etiket}" Margin="0,4,0,0"
                            Text="Değişiklikler anında uygulanır."/>
+                <!-- Yazıcı bulunamadı / sürücü desteklenmiyor gibi kalıcı uyarılar -->
+                <TextBlock x:Name="txtUyari" Foreground="{DynamicResource Warn}" FontSize="12" TextWrapping="Wrap"
+                           MaxWidth="520" HorizontalAlignment="Left" Margin="0,2,0,0" Visibility="Collapsed"/>
+                <!-- Birden fazla P1005 yazıcısı kuruluysa (ör. "… (Kopya 1)") hangisinin ayarlanacağı -->
+                <ComboBox x:Name="cmbYazici" Width="300" HorizontalAlignment="Left" Margin="0,8,0,0"
+                          Visibility="Collapsed" SelectionChanged="Yazici_Changed"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
                 <Border Background="{DynamicResource Card}" BorderBrush="{DynamicResource Line}" BorderThickness="1"
@@ -379,10 +410,32 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Style="{StaticResource Aciklama}" VerticalAlignment="Center" Margin="0,0,16,0"
                        Text="Kağıt kaynağı, çift taraflı baskı, filigran ve ölçekleme gibi diğer ayarlar için HP'nin eski penceresini açabilirsin."/>
-            <Button Grid.Column="1" Content="Yazdırma ayar penceresini aç" Click="Eski_Click"/>
+            <!-- Uygulamanın ilk yazdığı andan önceki ayarlar (YaziciDeposu yedeği) -->
+            <Button x:Name="btnGeriDon" Grid.Column="1" Content="İlk ayarlara geri dön" Margin="0,0,8,0"
+                    ToolTip="Bu uygulamayla yaptığın değişiklikleri geri alır" Click="GeriDon_Click"/>
+            <Button Grid.Column="2" Content="Yazdırma ayar penceresini aç" Click="Eski_Click"/>
         </Grid>
+    </Grid>
+
+    <!-- "İlk ayarlara geri dön" onayı: Windows'un MessageBox'ı yerine uygulamanın kendi kartı,
+         açık/koyu temaya uyar. Yarı saydam arka plan alttaki sayfaya tıklanmasını engeller. -->
+    <Grid x:Name="onayKatmani" Visibility="Collapsed" Background="#99000000">
+        <Border Style="{StaticResource Kart}" Width="440" Padding="24,22"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel>
+                <TextBlock Style="{StaticResource Baslik}" Margin="0,0,0,8" Text="İlk ayarlara geri dön"/>
+                <TextBlock x:Name="txtOnayMetin" Style="{StaticResource Aciklama}" FontSize="13"/>
+                <TextBlock x:Name="txtOnayTarih" Style="{StaticResource Etiket}" Margin="0,12,0,0"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+                    <Button Content="Vazgeç" Margin="0,0,8,0" Click="OnayHayir_Click"/>
+                    <Button x:Name="btnOnayEvet" Style="{StaticResource BirincilDugme}" Content="Geri dön" Click="OnayEvet_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
     </Grid>
 </Window>

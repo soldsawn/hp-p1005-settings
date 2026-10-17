@@ -48,31 +48,41 @@ Other settings (paper source, duplex, watermark, scaling) are still available th
 ## Requirements
 
 - Windows 10 or 11
-- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
-- An installed printer named exactly **`HP LaserJet P1005`** (the name is currently hard-coded)
-- Tested with the 2013 HP driver (version 1.0.2.2680). Other drivers may store settings differently.
+- An installed printer that uses the **HP LaserJet P1005** driver. Its name does not matter: a second
+  install such as *HP LaserJet P1005 (Copy 1)* is found too, and with more than one you pick which to set.
+- The 2013 HP driver (version 1.0.2.2680). The app checks the driver's settings layout before writing;
+  with any other version the *Printing* tab is shown read-only rather than risk writing to the wrong place.
 
 ## Install
 
-1. Download the latest `.exe` from the **Releases** page.
+1. Download one of the two files from the latest **Releases** page:
+   - `HP-P1005-Settings.exe` (~6 MB) needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
+   - `HP-P1005-Settings-standalone.exe` (~75 MB) runs as it is, nothing else to install.
 2. Run it. Changes on the *Printing* tab need no special rights.
 3. The *Device* tab writes machine-wide printer settings and needs **administrator rights**.
    If the app is not elevated it shows a *Restart as administrator* button.
+
+## Backup and restore
+
+The first time the app changes a setting on a printer, it saves that printer's settings as they were
+to `%LOCALAPPDATA%\YaziciKesif\` and never overwrites that copy. **Restore original settings** at the
+bottom puts them back; the *Device* settings need the app to run as administrator for that.
 
 ## How it works
 
 The old driver stores its settings in two places, and this app reads and writes them directly:
 
 - Per-user print defaults: `HKCU\Printers\DevModePerUser` (a binary DEVMODE block; the HP-specific flags live in its driver-private part)
-- Machine-wide device settings: `HKLM\SYSTEM\CurrentControlSet\Control\Print\Printers\HP LaserJet P1005\PrinterDriverData`
+- Machine-wide device settings: `HKLM\SYSTEM\CurrentControlSet\Control\Print\Printers\<printer name>\PrinterDriverData`
 
 The byte offsets were found by changing one option at a time in the original dialogs and comparing snapshots.
+The byte logic lives in `P1005DevMode.cs` and is unit-tested against a real settings block (`YaziciKesif.Tests`).
+Language and theme choices are remembered under `HKCU\Software\YaziciKesif`.
 
 ## Known limitations
 
-- Only tested on the HP LaserJet P1005. Printer name is hard-coded.
-- Paper type and paper source are not exposed yet.
-- Language and theme choices apply to the current session only (the app follows Windows by default).
+- Only tested on the HP LaserJet P1005 with the 2013 driver.
+- Paper type and paper source are not exposed yet (paper type can be reset to plain paper).
 
 ## Disclaimer
 
@@ -81,8 +91,11 @@ The app edits printer settings in the Windows registry. Use at your own risk; th
 
 ## Build from source
 
-Open the project in Visual Studio 2022 (".NET desktop development" workload), target .NET 8, and run.
-To publish a single file: *Build → Publish → Folder*, Deployment mode *Framework-dependent*, *Produce single file*.
+Open `YaziciKesif.sln` in Visual Studio 2022 (".NET desktop development" workload), target .NET 8, and run.
+Run the tests with `dotnet test YaziciKesif.Tests`.
+
+Releases are built by GitHub Actions (`.github/workflows/build.yml`): every push is built and tested, and
+pushing a tag such as `v0.1.0` publishes both `.exe` files to a Release for that tag.
 
 ## Contributing
 
@@ -105,15 +118,24 @@ Eski *Yazdırma Tercihleri* ve *Yazıcı Özellikleri → Aygıt Ayarları* penc
 ### Gereksinimler
 
 - Windows 10 veya 11
-- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
-- Adı tam olarak **`HP LaserJet P1005`** olan yüklü bir yazıcı (ad şimdilik koda sabit yazılı)
-- 2013 tarihli HP sürücüsüyle (1.0.2.2680) denenmiştir.
+- **HP LaserJet P1005** sürücüsünü kullanan kurulu bir yazıcı. Adı önemli değil: *HP LaserJet P1005 (Kopya 1)* gibi
+  ikinci bir kurulum da bulunur, birden fazlaysa hangisinin ayarlanacağını seçersin.
+- 2013 tarihli HP sürücüsü (1.0.2.2680). Uygulama yazmadan önce sürücünün ayar yapısını kontrol eder; başka bir
+  sürümde yanlış yere yazmamak için *Yazdırma* sekmesi yalnızca görüntülenir.
 
 ### Kurulum
 
-1. **Releases** sayfasından en son `.exe` dosyasını indir.
+1. En son **Releases** sayfasından iki dosyadan birini indir:
+   - `HP-P1005-Settings.exe` (~6 MB): [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) ister.
+   - `HP-P1005-Settings-standalone.exe` (~75 MB): hiçbir şey kurmadan çalışır.
 2. Çalıştır. *Yazdırma* sekmesi özel yetki gerektirmez.
 3. *Aygıt* sekmesi makine geneli ayar yazdığı için **yönetici yetkisi** ister. Yetki yoksa uygulama "Yönetici olarak yeniden başlat" düğmesi gösterir.
+
+### Yedek ve geri dönme
+
+Uygulama bir yazıcıda ilk kez bir ayarı değiştirmeden hemen önce o yazıcının ayarlarını `%LOCALAPPDATA%\YaziciKesif\`
+klasörüne kaydeder ve bu kopyanın üzerine bir daha yazmaz. Alttaki **İlk ayarlara geri dön** düğmesi onları geri yükler;
+*Aygıt* ayarları için uygulamanın yönetici olarak çalışması gerekir. Dil ve tema seçimin de hatırlanır.
 
 ### Uyarı
 

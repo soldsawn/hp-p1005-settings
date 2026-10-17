@@ -1,56 +1,44 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Win32;
+using static YaziciKesif.P1005DevMode;
 
 namespace YaziciKesif
 {
     public partial class MainWindow : Window
     {
-        const string Yazici = "HP LaserJet P1005";
-
-        // Sürücüye özel alan konumları (deneylerle bulundu)
-        const int OfsBayrak = 604;   // bit: 0x02=180°, 0x04=REt, 0x08=EconoMode, 0x10=Tüm yazıları siyah
-        const int OfsAyna = 605;     // bit 0x01 = ayna yazdırma
-        const int OfsKalite = 912;   // 0 = FastRes 1200, 1 = 600 dpi
-        const int OfsTur = 296;      // 16 bit: 1 = düz kağıt
-        const byte Dondur = 0x02, Ret = 0x04, Econo = 0x08, Siyah = 0x10;
-
-        // Standart DEVMODE alanları
-        const int OfsYon = 76, OfsKagit = 78, OfsBoy = 80, OfsEn = 82;
-
-        static readonly (string ad, int kod, int boy, int en)[] Kagitlar =
-        {
-            ("A4", 9, 2970, 2100),
-            ("Letter", 1, 2794, 2159),
-            ("Legal", 5, 3556, 2159),
-            ("A5", 11, 2100, 1480),
-        };
-
-
         [DllImport("dwmapi.dll")]
         static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int val, int size);
 
+        // Ayarlanan yazıcı: sürücüsü HP LaserJet P1005 olan kurulu yazıcılardan biri; hiç yoksa null.
+        string? yazici;
+        // Ayar bloğu bu uygulamanın tanıdığı sürücüye ait mi (P1005DevMode.Desteklenir). Değilse
+        // Yazdırma sekmesi yalnızca görüntülenir: yanlış konuma yazmak ayarları bozar.
+        bool destek;
         bool yukleniyor;
-        RadioButton[] boyutRdo;
+        readonly RadioButton[] boyutRdo;
 
         public MainWindow()
         {
             InitializeComponent();
             boyutRdo = new[] { rdoA4, rdoLetter, rdoLegal, rdoA5 };
-            en = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "tr";
+            // Kaydedilmiş dil, yoksa Windows'un dili
+            var dil = YaziciDeposu.Tercih("Dil");
+            en = dil != null ? dil == "en" : CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "tr";
+            var tema = YaziciDeposu.Tercih("Tema");
+            temaTercihi = tema == "acik" ? true : tema == "koyu" ? false : null;
             Loaded += (s, e) =>
             {
                 Tema();
                 rdoTR.IsChecked = !en;
                 rdoEN.IsChecked = en;
+                YaziciSec();
                 DilUygula();
                 if (Array.IndexOf(Environment.GetCommandLineArgs(), "--aygit") >= 0)
                 {
@@ -59,6 +47,18 @@ namespace YaziciKesif
                 }
             };
             Activated += (s, e) => { Tema(); Yukle(); };   // eski pencereden dönünce yenile
+            // Onay kartı açıkken Esc onu kapatır, bir pencere iletisinde olduğu gibi.
+            PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Escape && onayKatmani.Visibility == Visibility.Visible) { OnayKapat(); e.Handled = true; }
+            };
+        }
+
+        static string? Arguman(string ad)
+        {
+            var a = Environment.GetCommandLineArgs();
+            int i = Array.IndexOf(a, ad);
+            return i >= 0 && i + 1 < a.Length ? a[i + 1] : null;
         }
 
         // ---------- Tema (Windows'un açık/koyu ayarını izler) ----------
@@ -72,25 +72,26 @@ namespace YaziciKesif
             catch { return true; }
         }
 
-        // Düğmeyle yapılan seçim yalnızca bu oturum için geçerli; kaydedilmez.
-        bool? oturumTercihi;
+        // Düğmeyle yapılan seçim kaydedilir; hiç seçilmediyse Windows'un ayarı izlenir.
+        bool? temaTercihi;
         bool acikTema = true;
 
         void Tema_Click(object s, RoutedEventArgs e)
         {
-            oturumTercihi = !acikTema;
+            temaTercihi = !acikTema;
+            YaziciDeposu.TercihYaz("Tema", temaTercihi == true ? "acik" : "koyu");
             Tema();
         }
 
         void Tema()
         {
-            bool acik = acikTema = oturumTercihi ?? AcikTema();
+            bool acik = acikTema = temaTercihi ?? AcikTema();
             simgeAy.Visibility = acik ? Visibility.Visible : Visibility.Collapsed;
             simgeGunes.Visibility = acik ? Visibility.Collapsed : Visibility.Visible;
-            string[] ad = { "Bg", "Card", "Text", "Muted", "Line", "Accent", "Track" };
+            string[] ad = { "Bg", "Card", "Text", "Muted", "Line", "Accent", "Track", "Warn" };
             string[] renk = acik
-                ? new[] { "#F3F5F7", "#FFFFFF", "#1B2430", "#5F6B7A", "#DDE3EA", "#0A7CC2", "#C3CCD6" }
-                : new[] { "#14181D", "#1E242B", "#E8EDF2", "#98A4B3", "#2D3640", "#3BA7E8", "#3A444F" };
+                ? new[] { "#F3F5F7", "#FFFFFF", "#1B2430", "#5F6B7A", "#DDE3EA", "#0A7CC2", "#C3CCD6", "#B4690E" }
+                : new[] { "#14181D", "#1E242B", "#E8EDF2", "#98A4B3", "#2D3640", "#3BA7E8", "#3A444F", "#E8A23B" };
             for (int i = 0; i < ad.Length; i++)
                 Resources[ad[i]] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(renk[i]));
 
@@ -102,54 +103,91 @@ namespace YaziciKesif
             }
         }
 
+        // ---------- Yazıcı seçimi ----------
+        // Windows aynı yazıcıyı ikinci kez kurunca "HP LaserJet P1005 (Kopya 1)" gibi bir ad verir:
+        // sürücüsü P1005 olan her yazıcı listelenir, birden fazlaysa başlığın altında seçilir.
+        void YaziciSec()
+        {
+            var liste = YaziciDeposu.P1005Yazicilari();
+            yukleniyor = true;
+            cmbYazici.ItemsSource = liste;
+            cmbYazici.Visibility = liste.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            var istenen = Arguman("--yazici") ?? YaziciDeposu.Tercih("Yazici");
+            yazici = liste.Count == 0 ? null : istenen != null && liste.Contains(istenen) ? istenen : liste[0];
+            cmbYazici.SelectedItem = yazici;
+            yukleniyor = false;
+        }
+
+        void Yazici_Changed(object s, SelectionChangedEventArgs e)
+        {
+            if (yukleniyor || cmbYazici.SelectedItem is not string ad) return;
+            yazici = ad;
+            YaziciDeposu.TercihYaz("Yazici", ad);
+            Yukle();
+        }
+
         // ---------- Okuma ----------
-        static byte[] Oku()
+
+        static void Kilit(FrameworkElement e, bool acik)
         {
-            using var k = Registry.CurrentUser.OpenSubKey(@"Printers\DevModePerUser");
-            return (byte[])k.GetValue(Yazici);
+            e.IsEnabled = acik;
+            e.Opacity = acik ? 1.0 : 0.5;
         }
 
-        static int Oku16(byte[] b, int o) => BitConverter.ToInt16(b, o);
-
-        static void Yaz16(byte[] b, int o, int v)
+        void Uyari(string? metin)
         {
-            b[o] = (byte)v;
-            b[o + 1] = (byte)(v >> 8);
-        }
-
-        static void Bayrak(byte[] d, int ofs, byte bit, bool? acik)
-        {
-            byte yeni = acik == true ? (byte)(d[ofs] | bit) : (byte)(d[ofs] & ~bit);
-            YazBayt(d, ofs, yeni);
+            txtUyari.Text = metin ?? "";
+            txtUyari.Visibility = metin == null ? Visibility.Collapsed : Visibility.Visible;
         }
 
         void Yukle()
         {
+            if (yazici == null)
+            {
+                destek = false;
+                Kilit(sayfaYazdir, false);
+                Kilit(sayfaAygit, false);
+                btnGeriDon.IsEnabled = false;
+                Uyari(T("HP LaserJet P1005 bulunamadı. Yazıcının kurulu olduğundan emin ol."));
+                return;
+            }
+            Kilit(sayfaAygit, true);
+            string? uyari = null;
             try
             {
-                var d = Oku();
                 yukleniyor = true;
+                var d = YaziciDeposu.Oku(yazici);
+                destek = Desteklenir(d, out var neden);
+                if (d == null)
+                    uyari = T("Bu yazıcının yazdırma ayarları henüz oluşmamış. \"Yazdırma ayar penceresini aç\" ile bir kez açıp Tamam'a bas.");
+                else if (!destek)
+                    uyari = T("Bu sürücü sürümü desteklenmiyor, yazdırma ayarları yalnızca görüntülenir")
+                          + $" ({T("beklenen")} {BeklenenSurum}/{BeklenenBoyut}+{BeklenenEkBoyut}, {T("bulunan")} {neden}).";
+                Kilit(sayfaYazdir, destek);
 
-                rdoK0.IsChecked = d[OfsKalite] == 0;
-                rdoK1.IsChecked = d[OfsKalite] != 0;
-                chkEcono.IsChecked = (d[OfsBayrak] & Econo) != 0;
-                chkRet.IsChecked = (d[OfsBayrak] & Ret) != 0;
-                chkSiyah.IsChecked = (d[OfsBayrak] & Siyah) != 0;
-                chkDondur.IsChecked = (d[OfsBayrak] & Dondur) != 0;
-                chkAyna.IsChecked = (d[OfsAyna] & 0x01) != 0;
+                // Desteklenmeyen ama yeterince uzun bir blok yine de gösterilir, yalnızca yazılmaz.
+                if (d != null && d.Length > OfsKalite)
+                {
+                    rdoK0.IsChecked = d[OfsKalite] == 0;
+                    rdoK1.IsChecked = d[OfsKalite] != 0;
+                    chkEcono.IsChecked = BitAcik(d, OfsBayrak, Econo);
+                    chkRet.IsChecked = BitAcik(d, OfsBayrak, Ret);
+                    chkSiyah.IsChecked = BitAcik(d, OfsBayrak, Siyah);
+                    chkDondur.IsChecked = BitAcik(d, OfsBayrak, Dondur);
+                    chkAyna.IsChecked = BitAcik(d, OfsAyna, Ayna);
 
-                int kagit = Oku16(d, OfsKagit);
-                for (int i = 0; i < Kagitlar.Length; i++) boyutRdo[i].IsChecked = Kagitlar[i].kod == kagit;
+                    int kagit = Oku16(d, OfsKagit);
+                    for (int i = 0; i < Kagitlar.Length; i++) boyutRdo[i].IsChecked = Kagitlar[i].kod == kagit;
 
-                bool yatay = Oku16(d, OfsYon) == 2;
-                rdoYatay.IsChecked = yatay;
-                rdoDikey.IsChecked = !yatay;
+                    bool yatay = Oku16(d, OfsYon) == 2;
+                    rdoYatay.IsChecked = yatay;
+                    rdoDikey.IsChecked = !yatay;
 
-                int tur = Oku16(d, OfsTur);
-                txtTur.Text = tur == 1 ? T("Kağıt türü: düz kağıt")
-                                       : T("Kağıt türü düz kağıt değil") + " (" + T("kod") + " " + tur + ").";
-                btnDuz.Visibility = tur == 1 ? Visibility.Collapsed : Visibility.Visible;
-                YukleAygit();
+                    int tur = Oku16(d, OfsTur);
+                    txtTur.Text = tur == 1 ? T("Kağıt türü: düz kağıt")
+                                           : T("Kağıt türü düz kağıt değil") + " (" + T("kod") + " " + tur + ").";
+                    btnDuz.Visibility = tur == 1 ? Visibility.Collapsed : Visibility.Visible;
+                }
             }
             catch (Exception ex)
             {
@@ -159,44 +197,32 @@ namespace YaziciKesif
             {
                 yukleniyor = false;
             }
+            try { YukleAygit(); }
+            catch (Exception ex) { txtDurum.Text = T("Ayarlar okunamadı: ") + ex.Message; }
+            btnGeriDon.IsEnabled = YaziciDeposu.YedekVar(yazici);
+            Uyari(uyari);
         }
 
         // ---------- Yazma ----------
-        // Windows'un SetPrinter yolu sürücü kodunu çağırıp belleği bozuyordu (çökme).
-        // Bu yüzden kullanıcı ayar bloğu doğrudan kayıt defterine yazılır.
-        const int OfsToplam = 588;   // 16 bit sağlama toplamı
 
-        static void ToplamEkle(byte[] d, int fark)
+        void Kaydedildi()
         {
-            int t = (d[OfsToplam] | (d[OfsToplam + 1] << 8)) + fark;
-            d[OfsToplam] = (byte)t;
-            d[OfsToplam + 1] = (byte)(t >> 8);
-        }
-
-        static void YazBayt(byte[] d, int ofs, byte yeni)
-        {
-            int fark = yeni - d[ofs];
-            d[ofs] = yeni;
-            ToplamEkle(d, ofs % 2 == 0 ? fark : fark << 8);
-        }
-
-        static void YazOzel16(byte[] d, int ofs, int yeni)
-        {
-            int eski = (ushort)BitConverter.ToInt16(d, ofs);
-            Yaz16(d, ofs, yeni);
-            ToplamEkle(d, yeni - eski);
+            txtDurum.Text = T("Kaydedildi.");
+            btnGeriDon.IsEnabled = true;
         }
 
         void Uygula(Action<byte[]> degistir)
         {
-            if (yukleniyor) return;
+            if (yukleniyor || yazici == null || !destek) return;
             try
             {
-                var dm = Oku();
+                var dm = YaziciDeposu.Oku(yazici) ?? throw new Exception(T("Yazdırma ayarları bulunamadı."));
+                // Pencere açıkken sürücü değişmiş olabilir: her yazmadan önce yeniden bakılır.
+                if (!Desteklenir(dm, out _)) throw new Exception(T("Sürücü sürümü desteklenmiyor, yazılmadı."));
+                YaziciDeposu.YedekAlEgerYoksa(yazici);
                 degistir(dm);
-                using var k = Registry.CurrentUser.OpenSubKey(@"Printers\DevModePerUser", true);
-                k.SetValue(Yazici, dm, RegistryValueKind.Binary);
-                txtDurum.Text = T("Kaydedildi.");
+                YaziciDeposu.Yaz(yazici, dm);
+                Kaydedildi();
             }
             catch (Exception ex)
             {
@@ -205,77 +231,50 @@ namespace YaziciKesif
         }
 
         // ---------- Aygıt ayarları (makine geneli, yönetici yetkisi ister) ----------
-        const string AygitYolu = @"SYSTEM\CurrentControlSet\Control\Print\Printers\HP LaserJet P1005\PrinterDriverData";
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct PRINTER_DEFAULTS
-        {
-            public IntPtr pDatatype;
-            public IntPtr pDevMode;
-            public int DesiredAccess;
-        }
-
-        [DllImport("winspool.drv", SetLastError = true, CharSet = CharSet.Unicode)]
-        static extern bool OpenPrinter(string name, out IntPtr h, ref PRINTER_DEFAULTS def);
-        [DllImport("winspool.drv", SetLastError = true)]
-        static extern bool ClosePrinter(IntPtr h);
-        [DllImport("winspool.drv", CharSet = CharSet.Unicode)]
-        static extern int SetPrinterData(IntPtr h, string valueName, int type, byte[] data, int size);
-
-        static bool Yonetici()
-        {
-            using var id = WindowsIdentity.GetCurrent();
-            return new WindowsPrincipal(id).IsInRole(WindowsBuiltInRole.Administrator);
-        }
-
-        static int Dword(string ad, int varsayilan)
-        {
-            using var k = Registry.LocalMachine.OpenSubKey(AygitYolu);
-            return Convert.ToInt32(k?.GetValue(ad) ?? varsayilan);
-        }
 
         void YukleAygit()
         {
-            chkDurum.IsChecked = Dword("Status", 0) != 0;
-            chkSikisma.IsChecked = Dword("JamRecovery", 0) != 0;
-            chkManuel.IsChecked = Dword("ManualDuplex", 0) != 0;
+            if (yazici == null) return;
+            chkDurum.IsChecked = YaziciDeposu.Dword(yazici, "Status", 0) != 0;
+            chkSikisma.IsChecked = YaziciDeposu.Dword(yazici, "JamRecovery", 0) != 0;
+            chkManuel.IsChecked = YaziciDeposu.Dword(yazici, "ManualDuplex", 0) != 0;
 
-            bool koyu = Dword("CourierDark", 0) != 0;
+            bool koyu = YaziciDeposu.Dword(yazici, "CourierDark", 0) != 0;
             rdoC0.IsChecked = !koyu;
             rdoC1.IsChecked = koyu;
 
-            int yog = Dword("Density", 3);
+            int yog = YaziciDeposu.Dword(yazici, "Density", 3);
             foreach (var r in new[] { rdoY1, rdoY2, rdoY3, rdoY4, rdoY5 })
                 r.IsChecked = int.Parse((string)r.Tag) == yog;
 
-            bool yonetici = Yonetici();
+            bool yonetici = YaziciDeposu.Yonetici();
             txtYonetici.Text = yonetici
                 ? T("✓ Yönetici olarak çalışıyor. Aygıt ayarlarını değiştirebilirsin.")
                 : T("Bu ayarları değiştirmek için yönetici yetkisi gerekir. Şimdilik yalnızca görüntüleyebilirsin.");
             btnYonetici.Visibility = yonetici ? Visibility.Collapsed : Visibility.Visible;
-            kartlarAygit.IsEnabled = yonetici;
-            kartlarAygit.Opacity = yonetici ? 1.0 : 0.5;
+            Kilit(kartlarAygit, yonetici);
+        }
+
+        /// <summary>Bir aygıt ayarını yazar; başarısızsa nedenini fırlatır.</summary>
+        void AygitYazVeyaHata(string ad, int deger)
+        {
+            int r = YaziciDeposu.AygitYaz(yazici!, ad, deger);
+            if (r < 0) throw new Exception(T("Yazıcı açılamadı") + " (" + T("kod") + " " + -r + ")");
+            if (r != 0) throw new Exception(T("Kaydedilemedi") + " (" + T("kod") + " " + r + ")");
         }
 
         void AygitYaz(string ad, int deger)
         {
-            IntPtr h = IntPtr.Zero;
+            if (yazici == null) return;
             try
             {
-                var def = new PRINTER_DEFAULTS { DesiredAccess = 0x000F000C };   // PRINTER_ALL_ACCESS
-                if (!OpenPrinter(Yazici, out h, ref def))
-                    throw new Exception(T("Yazıcı açılamadı") + " (" + T("kod") + " " + Marshal.GetLastWin32Error() + ")");
-                int r = SetPrinterData(h, ad, 4, BitConverter.GetBytes(deger), 4);   // 4 = REG_DWORD
-                if (r != 0) throw new Exception(T("Kaydedilemedi") + " (" + T("kod") + " " + r + ")");
-                txtDurum.Text = T("Kaydedildi.");
+                YaziciDeposu.YedekAlEgerYoksa(yazici);
+                AygitYazVeyaHata(ad, deger);
+                Kaydedildi();
             }
             catch (Exception ex)
             {
                 txtDurum.Text = T("Hata: ") + ex.Message;
-            }
-            finally
-            {
-                if (h != IntPtr.Zero) ClosePrinter(h);
             }
         }
 
@@ -292,7 +291,9 @@ namespace YaziciKesif
         {
             try
             {
-                Process.Start(new ProcessStartInfo(Environment.ProcessPath!, "--aygit")
+                // Seçili yazıcı yönetici olarak açılan pencerede de seçili kalsın.
+                var arg = "--aygit" + (yazici != null ? " --yazici \"" + yazici + "\"" : "");
+                Process.Start(new ProcessStartInfo(Environment.ProcessPath!, arg)
                 { UseShellExecute = true, Verb = "runas" });
                 Application.Current.Shutdown();
             }
@@ -307,6 +308,52 @@ namespace YaziciKesif
         void Manuel_Click(object s, RoutedEventArgs e) => AygitYaz("ManualDuplex", chkManuel.IsChecked == true ? 1 : 0);
         void Courier_Click(object s, RoutedEventArgs e) => AygitYaz("CourierDark", rdoC1.IsChecked == true ? 1 : 0);
         void Yogunluk_Click(object s, RoutedEventArgs e) => AygitYaz("Density", int.Parse((string)((RadioButton)s).Tag));
+
+        // ---------- İlk ayarlara geri dönme ----------
+        // Yedek, bu uygulama bir yazıcıya ilk kez yazmadan hemen önce alınır (YaziciDeposu).
+        // Yazdırma ayarları her zaman geri yüklenir; aygıt ayarları yalnızca yönetici olarak.
+        // Önce pencerenin içindeki onay kartı açılır (onayKatmani); geri yükleme "Geri dön" ile olur.
+        void GeriDon_Click(object s, RoutedEventArgs e)
+        {
+            if (yazici == null) return;
+            var y = YaziciDeposu.YedekOku(yazici);
+            if (y == null) return;
+            txtOnayMetin.Text = T("Bu uygulamayla yaptığın tüm değişiklikler geri alınır, yazıcı eski ayarlarına döner.");
+            txtOnayTarih.Text = T("Eski ayarların kaydedildiği tarih: ") +y.Tarih.ToString("g", en ? CultureInfo.GetCultureInfo("en-US") : CultureInfo.GetCultureInfo("tr-TR"));
+            onayKatmani.Visibility = Visibility.Visible;
+            btnOnayEvet.Focus();
+        }
+
+        void OnayKapat() => onayKatmani.Visibility = Visibility.Collapsed;
+
+        void OnayHayir_Click(object s, RoutedEventArgs e) => OnayKapat();
+
+        void OnayEvet_Click(object s, RoutedEventArgs e)
+        {
+            OnayKapat();
+            if (yazici == null) return;
+            var y = YaziciDeposu.YedekOku(yazici);
+            if (y == null) return;
+            try
+            {
+                if (y.DevMode != null) YaziciDeposu.Yaz(yazici, Convert.FromBase64String(y.DevMode));
+                else YaziciDeposu.Sil(yazici);
+
+                bool aygitFarkli = false;
+                foreach (var (ad, varsayilan) in YaziciDeposu.AygitAyarlari)
+                {
+                    if (!y.Aygit.TryGetValue(ad, out var v) || YaziciDeposu.Dword(yazici, ad, varsayilan) == v) continue;
+                    if (YaziciDeposu.Yonetici()) AygitYazVeyaHata(ad, v);
+                    else aygitFarkli = true;
+                }
+                Yukle();
+                txtDurum.Text = T("İlk ayarlara dönüldü.") + (aygitFarkli ? " " + T("Aygıt ayarları için yönetici olarak yeniden başlatıp tekrar dene.") : "");
+            }
+            catch (Exception ex)
+            {
+                txtDurum.Text = T("Hata: ") + ex.Message;
+            }
+        }
 
         // ---------- Dil (TR / EN) ----------
         // XAML'deki Türkçe metinler özgün metin sayılır; İngilizce karşılıkları aşağıdaki sözlükten gelir.
@@ -353,6 +400,10 @@ namespace YaziciKesif
             ["Koyu"] = "Dark",
             ["Baskı yoğunluğu"] = "Print density",
             ["1 daha açık, 5 daha koyu baskı verir (toner yoğunluğu)."] = "1 prints lighter, 5 prints darker (toner density).",
+            ["İlk ayarlara geri dön"] = "Restore original settings",
+            ["Bu uygulamayla yaptığın değişiklikleri geri alır"] = "Undoes the changes you made with this app",
+            ["Vazgeç"] = "Cancel",
+            ["Geri dön"] = "Restore",
             // Koddan gelen metinler
             ["Kağıt türü: düz kağıt"] = "Paper type: plain paper",
             ["Kağıt türü düz kağıt değil"] = "Paper type is not plain paper",
@@ -365,11 +416,22 @@ namespace YaziciKesif
             ["Kaydedilemedi"] = "Could not save",
             ["✓ Yönetici olarak çalışıyor. Aygıt ayarlarını değiştirebilirsin."] = "✓ Running as administrator. You can change device settings.",
             ["Bu ayarları değiştirmek için yönetici yetkisi gerekir. Şimdilik yalnızca görüntüleyebilirsin."] = "Changing these settings requires administrator rights. You can only view them for now.",
+            ["HP LaserJet P1005 bulunamadı. Yazıcının kurulu olduğundan emin ol."] = "No HP LaserJet P1005 printer found. Make sure the printer is installed.",
+            ["Bu yazıcının yazdırma ayarları henüz oluşmamış. \"Yazdırma ayar penceresini aç\" ile bir kez açıp Tamam'a bas."] = "This printer has no print settings yet. Open them once with \"Open print settings window\" and press OK.",
+            ["Bu sürücü sürümü desteklenmiyor, yazdırma ayarları yalnızca görüntülenir"] = "This driver version is not supported, print settings are shown read-only",
+            ["beklenen"] = "expected",
+            ["bulunan"] = "found",
+            ["Yazdırma ayarları bulunamadı."] = "Print settings not found.",
+            ["Sürücü sürümü desteklenmiyor, yazılmadı."] = "Driver version not supported, nothing was written.",
+            ["Bu uygulamayla yaptığın tüm değişiklikler geri alınır, yazıcı eski ayarlarına döner."] = "All changes you made with this app are undone and the printer goes back to its earlier settings.",
+            ["Eski ayarların kaydedildiği tarih: "] = "Earlier settings saved on: ",
+            ["İlk ayarlara dönüldü."] = "Original settings restored.",
+            ["Aygıt ayarları için yönetici olarak yeniden başlatıp tekrar dene."] = "For the device settings, restart as administrator and try again.",
         };
 
         string T(string tr) => en && EN.TryGetValue(tr, out var e) ? e : tr;
 
-        static readonly HashSet<string> Dinamik = new() { "txtTur", "txtYonetici", "txtDurum" };
+        static readonly HashSet<string> Dinamik = new() { "txtTur", "txtYonetici", "txtDurum", "txtUyari", "txtOnayMetin", "txtOnayTarih" };
         readonly Dictionary<(object, string), string> asil = new();
 
         string Cev(object el, string alan, string simdi)
@@ -405,15 +467,16 @@ namespace YaziciKesif
         void Dil_Click(object s, RoutedEventArgs e)
         {
             en = rdoEN.IsChecked == true;
+            YaziciDeposu.TercihYaz("Dil", en ? "en" : "tr");
             DilUygula();
         }
 
         // ---------- Olaylar ----------
-        void Econo_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsBayrak, Econo, chkEcono.IsChecked));
-        void Ret_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsBayrak, Ret, chkRet.IsChecked));
-        void Siyah_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsBayrak, Siyah, chkSiyah.IsChecked));
-        void Dondur_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsBayrak, Dondur, chkDondur.IsChecked));
-        void Ayna_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsAyna, 0x01, chkAyna.IsChecked));
+        void Econo_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsBayrak, Econo, chkEcono.IsChecked == true));
+        void Ret_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsBayrak, Ret, chkRet.IsChecked == true));
+        void Siyah_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsBayrak, Siyah, chkSiyah.IsChecked == true));
+        void Dondur_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsBayrak, Dondur, chkDondur.IsChecked == true));
+        void Ayna_Click(object s, RoutedEventArgs e) => Uygula(d => Bayrak(d, OfsAyna, Ayna, chkAyna.IsChecked == true));
 
         void Kalite_Click(object s, RoutedEventArgs e)
         {
@@ -423,13 +486,8 @@ namespace YaziciKesif
 
         void Boyut_Click(object s, RoutedEventArgs e)
         {
-            var k = Kagitlar[int.Parse((string)((RadioButton)s).Tag)];
-            Uygula(d =>
-            {
-                Yaz16(d, OfsKagit, k.kod);
-                Yaz16(d, OfsBoy, k.boy);
-                Yaz16(d, OfsEn, k.en);
-            });
+            int sira = int.Parse((string)((RadioButton)s).Tag);
+            Uygula(d => KagitYaz(d, sira));
         }
 
         void Yon_Click(object s, RoutedEventArgs e)
@@ -444,18 +502,16 @@ namespace YaziciKesif
             Yukle();
         }
 
-        void Eski_Click(object s, RoutedEventArgs e)
+        // HP'nin eski pencereleri, seçili yazıcı için
+        void HpPenceresi(string anahtar)
         {
+            if (yazici == null) return;
             Process.Start(new ProcessStartInfo("rundll32.exe",
-                "printui.dll,PrintUIEntry /e /n \"" + Yazici + "\"")
-            { UseShellExecute = true });
-        }
-        void Ozellik_Click(object s, RoutedEventArgs e)
-        {
-            Process.Start(new ProcessStartInfo("rundll32.exe",
-                "printui.dll,PrintUIEntry /p /n \"" + Yazici + "\"")
+                "printui.dll,PrintUIEntry " + anahtar + " /n \"" + yazici + "\"")
             { UseShellExecute = true });
         }
 
+        void Eski_Click(object s, RoutedEventArgs e) => HpPenceresi("/e");
+        void Ozellik_Click(object s, RoutedEventArgs e) => HpPenceresi("/p");
     }
 }
